@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn(){ return request.auth != null; }
+    function admin(){ return signedIn() && request.auth.uid == "YOUR_ADMIN_UID"; }
+    match /settings/tournament {
+      allow read: if true;
+      allow write: if admin();
+    }
+    match /settings/room {
+      allow read, write: if admin();
+    }
+    match /registrations/{id} {
+      allow create: if signedIn()
+        && request.auth.token.phone_number != null
+        && request.resource.data.phone == request.auth.token.phone_number
+        && request.resource.data.verifiedPhone == true
+        && request.resource.data.paymentStatus == "Pending";
+      allow read, update, delete: if admin();
+    }
+  }
+}
